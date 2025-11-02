@@ -5,3 +5,11 @@ gcc sobel.c -o sobel -lm
 macOS 编译要手动link一下OpenMP的Lib
 
 clang sobel_omp.c -o sobel_omp -lm -I/opt/homebrew/opt/libomp/include -L/opt/homebrew/opt/libomp/lib -lomp
+
+编译并采用O3优化:
+gcc sobel_omp.c -o sobel_omp -lm -fopenmp -O3
+
+
+
+登录机器：
+ssh whuang25@gw.cse.cuhk.edu.hk
