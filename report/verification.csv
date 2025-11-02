@@ -1,0 +1,2 @@
+test_pattern,expected_center_pixel,actual_center_pixel,status
+5x5_vertical_edge,255.0,255.0,Passed
