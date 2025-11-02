@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "*.crt": "bat",
+        "pgmio.h": "c"
+    }
+}
