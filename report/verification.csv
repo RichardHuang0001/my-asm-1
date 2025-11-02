@@ -1,2 +1,3 @@
 test_pattern,expected_center_pixel,actual_center_pixel,status
 5x5_vertical_edge,255.0,255.0,Passed
+5x5_omp_1_thread,255.0,255.0,Passed

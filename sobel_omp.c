@@ -1,4 +1,17 @@
-
+/*
+ * sobel_omp_tiled.c - OpenMP并行版Sobel边缘检测（Tile分块优化）
+ * 
+ * 编译: gcc sobel_omp_tiled.c -o sobel_omp_tiled -lm -fopenmp -O3
+ * 
+ * 用法:
+ *   ./sobel_omp_tiled <输入.pgm> <输出.pgm> [线程数]
+ *   ./sobel_omp_tiled -n <尺寸> [线程数]
+ * 
+ * 与sobel_omp.c的区别:
+ *   - 采用分块(tiling)策略处理大图像，提升缓存利用率
+ *   - 每个tile独立处理，减少内存带宽竞争
+ *   - 针对4000x4000和16000x16000图像优化
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
