@@ -1,0 +1,3 @@
+编译c语言代码：
+
+gcc sobel.c -o sobel -lm

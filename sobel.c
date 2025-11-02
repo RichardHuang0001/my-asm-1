@@ -8,8 +8,15 @@
  *   pgmio.h 提供 PGM 读写接口（pgmread / pgmwrite）
  *
  * 用法:
- *   ./sobel <输入.pgm> <输出.pgm>
- *   示例: ./sobel sample_256.pgm output_sobel.pgm
+ *   1) 显式指定输入/输出：
+ *      ./sobel <输入.pgm> <输出.pgm>
+ *      示例: ./sobel sample_256.pgm out_256_sobel.pgm
+ *   2) 通过样本尺寸自动选择文件：
+ *      ./sobel -n <尺寸>
+ *      支持尺寸: 256 / 1024 / 4000 / 16000
+ *      文件映射: 256→sample_256.pgm, 1024→sample_1024.pgm,
+ *               4000→sample_4k.pgm, 16000→sample_16k.pgm
+ *      输出文件名将生成为 out_<尺寸>_sobel.pgm（4K/16K 采用 out_4k_sobel.pgm / out_16k_sobel.pgm）
  *
  * 说明:
  *   - 图像内存以一维 float 数组存储，按行主序索引。
@@ -21,9 +28,12 @@
 #include <stdlib.h>
 #include <string.h> // 用来清空内存 (memset)
 #include <math.h>   // 用来算平方根 (sqrtf)
+#include <stddef.h> // 用于 size_t 类型（snprintf 缓冲区长度）
 
 // 图像读写接口（pgmread/pgmwrite）
 #include "pgmio.h" 
+
+#include <time.h>     // 用于 clock() 计时
 
 // Sobel 算子 3×3 核定义
 float Gx[3][3] = {
@@ -37,6 +47,35 @@ float Gy[3][3] = {
     { 0.0f,  0.0f,  0.0f},
     { 1.0f,  2.0f,  1.0f}
 };
+
+/*
+ * 根据样本尺寸生成默认输入/输出文件路径
+ * 支持尺寸: 256 / 1024 / 4000 / 16000
+ * 输入: size — 样本尺寸（像素数的一边）
+ * 输出: in_path / out_path — 写入生成的文件名（缓冲区由调用者提供）
+ * 返回: 0 成功；-1 尺寸不支持
+ * 说明: 为 4000/16000 采用与仓库约定的命名（sample_4k.pgm / sample_16k.pgm）
+ */
+static int build_paths_for_size(int size, char *in_path, size_t in_len, char *out_path, size_t out_len) {
+    if (size == 256) {
+        snprintf(in_path, in_len, "sample_256.pgm");
+        snprintf(out_path, out_len, "out_256_sobel.pgm");
+        return 0;
+    } else if (size == 1024) {
+        snprintf(in_path, in_len, "sample_1024.pgm");
+        snprintf(out_path, out_len, "out_1024_sobel.pgm");
+        return 0;
+    } else if (size == 4000) {
+        snprintf(in_path, in_len, "sample_4k.pgm");
+        snprintf(out_path, out_len, "out_4k_sobel.pgm");
+        return 0;
+    } else if (size == 16000) {
+        snprintf(in_path, in_len, "sample_16k.pgm");
+        snprintf(out_path, out_len, "out_16k_sobel.pgm");
+        return 0;
+    }
+    return -1;
+}
 
 
 /*
@@ -143,9 +182,35 @@ void sobel_filter(const float *in_image, float *out_image, int width, int height
  */
 int main(int argc, char *argv[]) {
 
-    // 参数校验：需要输入输出文件路径
-    if (argc != 3) {
+    // 解析参数：支持两种用法
+    // 1) ./sobel <输入.pgm> <输出.pgm>
+    // 2) ./sobel -n <尺寸> （自动映射样图与输出文件名）
+    char input_file_buf[128] = {0};   // 默认输入文件（当使用 -n 时写入）
+    char output_file_buf[128] = {0};  // 默认输出文件（当使用 -n 时写入）
+    char *input_file = NULL;
+    char *output_file = NULL;
+
+    // 计时器变量
+    clock_t start, end;
+    double cpu_time_used;
+
+    if (argc == 3 && strcmp(argv[1], "-n") == 0) {
+        // 使用样本尺寸参数
+        int size = atoi(argv[2]);
+        if (build_paths_for_size(size, input_file_buf, sizeof(input_file_buf), output_file_buf, sizeof(output_file_buf)) != 0) {
+            fprintf(stderr, "尺寸不支持: %d（支持 256/1024/4000/16000）\n", size);
+            return 1;
+        }
+        input_file = input_file_buf;
+        output_file = output_file_buf;
+        printf("使用尺寸参数 -n %d，输入: %s，输出: %s\n", size, input_file, output_file);
+    } else if (argc == 3) {
+        // 传统用法：显式指定输入/输出文件
+        input_file = argv[1];
+        output_file = argv[2];
+    } else {
         fprintf(stderr, "用法: %s <输入图片.pgm> <输出图片.pgm>\n", argv[0]);
+        fprintf(stderr, "     或: %s -n <样本尺寸>    （支持 256/1024/4000/16000）\n", argv[0]);
         return 1;
     }
 
@@ -154,9 +219,6 @@ int main(int argc, char *argv[]) {
     float *blur_buffer;  // 均值滤波结果
     float *sobel_buffer; // Sobel 幅值结果
     int rows, cols;      // 行（rows）、列（cols）
-    
-    char *input_file = argv[1];
-    char *output_file = argv[2];
 
     // 读取 PGM 图像（pgmread 内部分配 image_buffer）
     printf("读取图片: %s\n", input_file);
@@ -178,11 +240,16 @@ int main(int argc, char *argv[]) {
     memset(blur_buffer, 0, rows * cols * sizeof(float));
     memset(sobel_buffer, 0, rows * cols * sizeof(float));
 
+    start = clock();
+
     // 可选预处理：3×3 均值滤波（输入: 原始，输出: 模糊）
     blur_filter(image_buffer, blur_buffer, cols, rows); // 宽度=cols，高度=rows
     
     // 核心处理：Sobel 边缘检测（输入: 模糊，输出: 幅值）
     sobel_filter(blur_buffer, sobel_buffer, cols, rows); // 宽度=cols，高度=rows
+
+    end = clock();
+    cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 
     // 写入结果为 PGM（P5 二进制）
     printf("写入图片: %s\n", output_file);
@@ -190,6 +257,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "写入图片失败: %s\n", output_file);
     }
     printf("完成!\n");
+    printf("sequential version (sobel.c) 执行时间: %f 秒\n", cpu_time_used);
 
     // 释放分配资源
     free(image_buffer);
