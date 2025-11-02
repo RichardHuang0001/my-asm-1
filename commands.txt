@@ -1,3 +1,7 @@
 编译c语言代码：
 
 gcc sobel.c -o sobel -lm
+
+macOS 编译要手动link一下OpenMP的Lib
+
+clang sobel_omp.c -o sobel_omp -lm -I/opt/homebrew/opt/libomp/include -L/opt/homebrew/opt/libomp/lib -lomp
