@@ -18,12 +18,13 @@ OUTPUT_FILE="SOBEL_MPI_${NUM_NODES}n_${TASKS_PER_NODE}t_${PROBLEM_SIZE}_%j.out"
 EXECUTABLE="./sobel_mpi"
 
 # --- Create the Slurm job script using a heredoc ---
+# 这里我暂时删除了邮箱，因为登录cse邮箱比较麻烦
 cat <<EOF > "sobel_mpi.job"
 #!/bin/bash
 #SBATCH --job-name=${JOB_NAME}
-#SBATCH --output=/uac/lec/ktlam/cmsc5702/demos/${OUTPUT_FILE}
-#SBATCH --mail-user=ktlam@cse.cuhk.edu.hk
-#SBATCH --mail-type=ALL
+#SBATCH --output=/uac/msc/whuang25/cmsc5702/${OUTPUT_FILE}
+
+
 #SBATCH --time=00:10:00           # Wall-clock time limit (e.g., 10 minutes)
 
 #SBATCH --nodes=${NUM_NODES}
@@ -34,7 +35,7 @@ cat <<EOF > "sobel_mpi.job"
 scontrol show hostnames "\$SLURM_NODELIST" | awk '{print \$0" slots=${TASKS_PER_NODE}"}' > hostfile.txt
 
 # Run the MPI program
-mpiexec.openmpi --hostfile hostfile.txt -n ${TOTAL_TASKS} ${EXECUTABLE} ${PROBLEM_SIZE}
+mpiexec.openmpi --hostfile hostfile.txt -n ${TOTAL_TASKS} ${EXECUTABLE} -n ${PROBLEM_SIZE}
 
 # Clean up the hostfile
 rm hostfile.txt
