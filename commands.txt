@@ -13,3 +13,6 @@ gcc sobel_omp.c -o sobel_omp -lm -fopenmp -O3
 
 登录机器：
 ssh whuang25@gw.cse.cuhk.edu.hk
+
+第三部分的编译命令，需要用完整路径才找得到编译器
+/usr/local/openmpi/bin/mpicc sobel_mpi.c -o sobel_mpi -lm
