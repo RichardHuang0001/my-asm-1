@@ -1,11 +1,4 @@
 #!/bin/bash
-# ============================================================================
-# CMSC5702 Assignment 1 - Run all MPI configurations and save summary times
-# Output format:
-#   image_size,nodes,processes,run1_time,run2_time,run3_time
-# Author: ChatGPT helper script
-# ============================================================================
-
 # --- Configuration ---
 SIZES=(256 1024 4000 16000)
 # For 1 node: processes = 1, 2, 4 (== tasks_per_node)
@@ -74,4 +67,4 @@ for size in "${SIZES[@]}"; do
   done
 done
 
-echo "✅ All done. Results saved to $CSV"
+echo "All done. Results saved to $CSV"
