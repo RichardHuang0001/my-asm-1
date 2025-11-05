@@ -1,4 +1,4 @@
-image_size,num_threads,run1_time,run2_time,run3_time
+image_size,threads,run1_time,run2_time,run3_time
 256,1,0.002602,0.002662,0.002512
 256,2,0.002633,0.002648,0.002686
 256,4,0.002697,0.002705,0.002729
