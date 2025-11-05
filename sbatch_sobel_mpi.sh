@@ -23,7 +23,7 @@ cat <<EOF > "sobel_mpi.job"
 #!/bin/bash
 #SBATCH --job-name=${JOB_NAME}
 #SBATCH --output=/uac/msc/whuang25/cmsc5702/${OUTPUT_FILE}
-
+#SBATCH --error=/uac/msc/whuang25/cmsc5702/%x_%j.err   # Standard error log as .err
 
 #SBATCH --time=00:10:00           # Wall-clock time limit (e.g., 10 minutes)
 
