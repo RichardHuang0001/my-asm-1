@@ -1,19 +1,19 @@
 #!/bin/bash
-#SBATCH --job-name=SOBEL_MPI_4n_8t_16000
-#SBATCH --output=/uac/msc/whuang25/cmsc5702/SOBEL_MPI_4n_8t_16000_%j.out
+#SBATCH --job-name=SOBEL_MPI_1n_4t_1024
+#SBATCH --output=/uac/msc/whuang25/cmsc5702/SOBEL_MPI_1n_4t_1024_%j.out
 #SBATCH --error=/uac/msc/whuang25/cmsc5702/%x_%j.err   # Standard error log as .err
 
 #SBATCH --time=00:10:00           # Wall-clock time limit (e.g., 10 minutes)
 
-#SBATCH --nodes=4
-#SBATCH --ntasks=32
-#SBATCH --ntasks-per-node=8
+#SBATCH --nodes=1
+#SBATCH --ntasks=4
+#SBATCH --ntasks-per-node=4
 
 # Create a hostfile based on SLURM allocated nodes
-scontrol show hostnames "$SLURM_NODELIST" | awk '{print $0" slots=8"}' > hostfile.txt
+scontrol show hostnames "$SLURM_NODELIST" | awk '{print $0" slots=4"}' > hostfile.txt
 
 # Run the MPI program
-mpiexec.openmpi --hostfile hostfile.txt -n 32 ./sobel_mpi -n 16000
+mpiexec.openmpi --hostfile hostfile.txt -n 4 ./sobel_mpi -n 1024
 
 # Clean up the hostfile
 rm hostfile.txt
