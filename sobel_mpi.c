@@ -1,13 +1,6 @@
 /*
- * sobel_mpi.c - MPI并行版Sobel边缘检测
+ * sobel_mpi.c 
  * 
- * 编译: mpicc sobel_mpi.c -o sobel_mpi -lm
- * 
- * 用法:
- *   mpirun -np <N> ./sobel_mpi <输入.pgm> <输出.pgm>
- *   mpirun -np <N> ./sobel_mpi -n <尺寸>
- * 
- * 策略: 1D行分解 + MPI_Sendrecv通信 + Ghost区域
  */
 
 #include <stdio.h>
@@ -30,7 +23,7 @@ float Gy[3][3] = {
     { 1.0f,  2.0f,  1.0f}
 };
 
-// 根据样本尺寸构建文件路径
+// 辅助函数 根据尺寸构建文件名
 static int build_paths_for_size(int size, char *in_path, size_t in_len, 
                                 char *out_path, size_t out_len) {
     if (size == 256) {
@@ -53,7 +46,7 @@ static int build_paths_for_size(int size, char *in_path, size_t in_len,
     return -1;
 }
 
-// 计算数据分布：每个进程负责的行数和偏移量
+// 计算数据分布 计算sendcounts displs 和 local_rows
 void compute_distribution(int height, int width, int nprocs,
                          int *sendcounts, int *displs, int *local_rows) {
     int base_rows = height / nprocs;
@@ -69,16 +62,16 @@ void compute_distribution(int height, int width, int nprocs,
     }
 }
 
-// Halo Exchange: 与上下邻居交换边界数据
+// Halo交换 (Ghost区域数据交换)
 void halo_exchange(float *data, int local_rows, int width, 
                   int rank, int nprocs) {
     MPI_Status status;
     
     // 地址计算
-    float *ghost_top = &data[0];                           // 第0行
-    float *first_row = &data[width];                       // 第1行（实际数据首行）
+    float *ghost_top = &data[0];                           // 第0行 (Ghost)
+    float *first_row = &data[width];                       // 实际数据首行 (index 1)
     float *last_row = &data[local_rows * width];           // 实际数据末行
-    float *ghost_bottom = &data[(local_rows + 1) * width]; // 最后1行
+    float *ghost_bottom = &data[(local_rows + 1) * width]; // 最后1行 (Ghost)
     
     // 与上邻居交换
     if (rank > 0) {
@@ -86,7 +79,7 @@ void halo_exchange(float *data, int local_rows, int width,
                      ghost_top, width, MPI_FLOAT, rank - 1, 1,
                      MPI_COMM_WORLD, &status);
     } else {
-        // rank 0没有上邻居，ghost_top保持为0
+        // rank 0 无上邻居 ghost_top置0
         memset(ghost_top, 0, width * sizeof(float));
     }
     
@@ -96,7 +89,7 @@ void halo_exchange(float *data, int local_rows, int width,
                      ghost_bottom, width, MPI_FLOAT, rank + 1, 0,
                      MPI_COMM_WORLD, &status);
     } else {
-        // 最后一个进程没有下邻居，ghost_bottom保持为0
+        // rank n-1 无下邻居 ghost_bottom置0
         memset(ghost_bottom, 0, width * sizeof(float));
     }
 }
@@ -104,10 +97,10 @@ void halo_exchange(float *data, int local_rows, int width,
 // 本地Blur Filter (3x3均值滤波)
 void blur_filter_local(const float *input, float *output, 
                       int local_rows, int width, int global_start_row, int height) {
-    // 遍历本地所有行（在包含ghost的坐标系中，实际数据从index 1开始）
+    // 遍历本地数据行 (local_y 0..local_rows-1)
     for (int local_y = 0; local_y < local_rows; local_y++) {
         int global_y = global_start_row + local_y;  // 全局行号
-        int in_y = local_y + 1;  // 在包含ghost的数组中的位置
+        int in_y = local_y + 1;  // 对应input buffer的行号 (跳过ghost_top)
         
         for (int x = 0; x < width; x++) {
             // 图像边界直接设为0
@@ -128,7 +121,7 @@ void blur_filter_local(const float *input, float *output,
         }
     }
     
-    // 保持ghost区域为0
+    // 确保输出的ghost区域为0
     memset(&output[0], 0, width * sizeof(float));
     memset(&output[(local_rows + 1) * width], 0, width * sizeof(float));
 }
@@ -177,9 +170,8 @@ int main(int argc, char *argv[]) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
     
-    //=========================================================================
-    // 1. 命令行参数解析
-    //=========================================================================
+    
+    //  命令行参数解析
     char input_file_buf[128] = {0};
     char output_file_buf[128] = {0};
     char *input_file = NULL;
@@ -209,9 +201,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     
-    //=========================================================================
-    // 2. Master进程读取图像
-    //=========================================================================
+    
+    // Rank 0 读取图像
     float *full_image = NULL;
     int height, width;
     
@@ -229,9 +220,8 @@ int main(int argc, char *argv[]) {
     MPI_Bcast(&height, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&width, 1, MPI_INT, 0, MPI_COMM_WORLD);
     
-    //=========================================================================
-    // 3. 计算数据分布
-    //=========================================================================
+    
+    // 计算数据分布
     int *sendcounts = NULL;
     int *displs = NULL;
     int *rows_per_proc = NULL;
@@ -263,10 +253,9 @@ int main(int argc, char *argv[]) {
         MPI_Recv(&global_start_row, 1, MPI_INT, 0, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
     
-    //=========================================================================
-    // 4. 分配本地缓冲区
-    //=========================================================================
-    // local_input: 包含ghost区域 (local_rows + 2) x width
+    
+    // 分配本地缓冲区
+    // local_input 包含2行Ghost (local_rows + 2) * width
     float *local_input = (float *)malloc((local_rows + 2) * width * sizeof(float));
     float *local_blur = (float *)malloc((local_rows + 2) * width * sizeof(float));
     float *local_sobel = (float *)malloc(local_rows * width * sizeof(float));
@@ -279,38 +268,33 @@ int main(int argc, char *argv[]) {
     memset(local_input, 0, (local_rows + 2) * width * sizeof(float));
     memset(local_blur, 0, (local_rows + 2) * width * sizeof(float));
     
-    //=========================================================================
-    // 5. Scatter: 分发数据到各进程
-    //=========================================================================
-    // 接收数据到实际数据区域（跳过第一行ghost）
+    
+    // 分发数据 (Scatterv)
+    // 接收到 local_input[width] 跳过ghost_top
     MPI_Scatterv(full_image, sendcounts, displs, MPI_FLOAT,
-                 &local_input[width],  // 跳过ghost_top
+                 &local_input[width],  
                  local_rows * width, MPI_FLOAT,
                  0, MPI_COMM_WORLD);
     
-    //=========================================================================
-    // 6. 开始计时
-    //=========================================================================
+    
+    // 开始计时
     MPI_Barrier(MPI_COMM_WORLD);
     double start_time = MPI_Wtime();
     
-    //=========================================================================
-    // 7. Blur阶段
-    //=========================================================================
+    
+    // Blur阶段
     halo_exchange(local_input, local_rows, width, rank, nprocs);
     blur_filter_local(local_input, local_blur, local_rows, width, 
                      global_start_row, height);
     
-    //=========================================================================
-    // 8. Sobel阶段
-    //=========================================================================
+    
+    // Sobel阶段
     halo_exchange(local_blur, local_rows, width, rank, nprocs);
     sobel_filter_local(local_blur, local_sobel, local_rows, width,
                       global_start_row, height);
     
-    //=========================================================================
-    // 9. 结束计时
-    //=========================================================================
+    
+    // 结束计时
     MPI_Barrier(MPI_COMM_WORLD);
     double end_time = MPI_Wtime();
     double local_time = end_time - start_time;
@@ -319,9 +303,8 @@ int main(int argc, char *argv[]) {
     double max_time;
     MPI_Reduce(&local_time, &max_time, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
     
-    //=========================================================================
-    // 10. Gather: 收集结果
-    //=========================================================================
+    
+    // 收集结果
     float *full_result = NULL;
     if (rank == 0) {
         full_result = (float *)malloc(height * width * sizeof(float));
@@ -331,9 +314,8 @@ int main(int argc, char *argv[]) {
                 full_result, sendcounts, displs, MPI_FLOAT,
                 0, MPI_COMM_WORLD);
     
-    //=========================================================================
-    // 11. Master进程写入结果
-    //=========================================================================
+    
+    // Rank 0 写入文件
     if (rank == 0) {
         printf("写入图像: %s\n", output_file);
         if (pgmwrite(output_file, full_result, height, width, 1) != 0) {
@@ -349,9 +331,8 @@ int main(int argc, char *argv[]) {
         free(rows_per_proc);
     }
     
-    //=========================================================================
-    // 12. 清理
-    //=========================================================================
+    
+    // 清理
     free(local_input);
     free(local_blur);
     free(local_sobel);
