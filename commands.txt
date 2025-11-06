@@ -16,3 +16,7 @@ ssh whuang25@gw.cse.cuhk.edu.hk
 
 第三部分的编译命令，需要用完整路径才找得到编译器
 /usr/local/openmpi/bin/mpicc sobel_mpi.c -o sobel_mpi -lm
+
+
+jupyter notebook导出为pdf命令
+jupyter nbconvert --to webpdf "report/CMSC5702_Assignment_1_report.ipynb" --output "CMSC5702_Assignment_1_report" --output-dir "report" --allow-chromium-download
