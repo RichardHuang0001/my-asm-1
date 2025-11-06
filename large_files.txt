@@ -1,0 +1,6 @@
+out_1024_sobel.pgm
+out_256_sobel.pgm
+out_4k_sobel.pgm
+out_16k_sobel_mpi.pgm
+sample_1024.pgm
+sample_256.pgm

@@ -1,2 +1,21 @@
+# 忽略所有 PGM 文件
 *.pgm
+
+# 明确忽略超大文件
+out_16k_sobel_mpi.pgm
+out_16k_sobel.pgm
+
+# 忽略样本、验证、测试类
+sample_*.pgm
+verify_*.pgm
+test_*.pgm
+
+# 忽略截图目录
 /过程截图/
+
+# 最后，保留较小的输出文件（必须放在最后！）
+!out_256_sobel.pgm
+!out_256_sobel_mpi.pgm
+!out_4k_sobel.pgm
+!out_4k_sobel_mpi.pgm
+!out_1024_sobel.pgm
