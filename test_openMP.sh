@@ -16,7 +16,7 @@ echo "编译成功！"
 echo ""
 
 # 创建CSV文件并写入表头
-CSV_FILE="openmp_times.csv"
+CSV_FILE="report/openmp_times.csv"
 echo "image_size,threads,run1_time,run2_time,run3_time" > $CSV_FILE
 
 # 测试的图像尺寸和线程数

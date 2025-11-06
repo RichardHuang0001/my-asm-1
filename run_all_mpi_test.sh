@@ -6,7 +6,7 @@ SIZES=(256 1024 4000 16000)
 declare -a COMBOS=("1 1" "1 2" "1 4" "4 2" "4 4" "4 8")
 
 # Output CSV
-CSV="mpi_times_summary_simple.csv"
+CSV="report/mpi_times.csv"
 echo "image_size,nodes,processes,run1_time,run2_time,run3_time" > "$CSV"
 
 # --- Helper function: run and extract time ---
