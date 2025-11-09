@@ -6,8 +6,8 @@ echo "OpenMP版本性能测试脚本"
 echo "======================================"
 
 # 编译OpenMP版本
-echo "编译 sobel_omp_tiled.c ..."
-gcc sobel_omp_tiled.c -o sobel_omp -lm -fopenmp -O3
+echo "编译 sobel_omp.c ..."
+gcc sobel_omp.c -o sobel_omp -lm -fopenmp -O3
 if [ $? -ne 0 ]; then
     echo "编译失败！"
     exit 1

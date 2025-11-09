@@ -41,19 +41,19 @@ static int build_paths_for_size(int size, char *in_path, size_t in_len,
                                 char *out_path, size_t out_len) {
     if (size == 256) {
         snprintf(in_path, in_len, "sample_256.pgm");
-        snprintf(out_path, out_len, "out_256_sobel.pgm");
+        snprintf(out_path, out_len, "out_256_sobel_omp.pgm");
         return 0;
     } else if (size == 1024) {
         snprintf(in_path, in_len, "sample_1024.pgm");
-        snprintf(out_path, out_len, "out_1024_sobel.pgm");
+        snprintf(out_path, out_len, "out_1024_sobel_omp.pgm");
         return 0;
     } else if (size == 4000) {
         snprintf(in_path, in_len, "sample_4k.pgm");
-        snprintf(out_path, out_len, "out_4k_sobel.pgm");
+        snprintf(out_path, out_len, "out_4k_sobel_omp.pgm");
         return 0;
     } else if (size == 16000) {
         snprintf(in_path, in_len, "sample_16k.pgm");
-        snprintf(out_path, out_len, "out_16k_sobel.pgm");
+        snprintf(out_path, out_len, "out_16k_sobel_omp.pgm");
         return 0;
     }
     return -1;
