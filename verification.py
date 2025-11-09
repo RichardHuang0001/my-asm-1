@@ -65,7 +65,7 @@ def compare_images(base_path, test_path, tol=0.0):
 
 
 def main():
-    sizes = [256, 1024, 4000, 16000]
+    sizes = [256, 1024, '4k', '16k']
     versions = ["omp", "mpi"]
 
     os.makedirs("report", exist_ok=True)

@@ -1,3 +1,9 @@
-test_pattern,expected_center_pixel,actual_center_pixel,status
-5x5_vertical_edge,255.0,255.0,Passed
-5x5_omp_1_thread,255.0,255.0,Passed
+sample,implementation,pass,max_abs_error,mse,num_diff_pixels
+256x256,omp,True,0.000000,0.000000,0
+256x256,mpi,True,0.000000,0.000000,0
+1024x1024,omp,True,0.000000,0.000000,0
+1024x1024,mpi,True,0.000000,0.000000,0
+4kx4k,omp,True,0.000000,0.000000,0
+4kx4k,mpi,True,0.000000,0.000000,0
+16kx16k,omp,True,0.000000,0.000000,0
+16kx16k,mpi,True,0.000000,0.000000,0

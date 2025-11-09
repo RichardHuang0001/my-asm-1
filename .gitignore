@@ -18,3 +18,5 @@ test_*.pgm
 /过程截图/
 
 .DS_Store
+out_16k_sobel_omp.pgm
+venv/
