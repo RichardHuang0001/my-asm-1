@@ -41,8 +41,8 @@ for SIZE in "${SIZES[@]}"; do
         # 运行程序并捕获输出
         output=$(./sobel -n $SIZE 2>&1)
         
-        # 从输出中提取时间（格式: "Sequential版本执行时间: 0.123456 秒"）
-        time=$(echo "$output" | grep "执行时间" | awk '{print $3}')
+        # 从输出中提取时间（格式:
+        time=$(echo "$output" | grep -Eo "[0-9]+\.[0-9]+")
         
         if [ -z "$time" ]; then
             echo "    错误：无法获取时间！"
